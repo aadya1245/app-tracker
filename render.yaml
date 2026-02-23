@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: task-manager-api
+    runtime: docker
+    rootDir: api
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 1d
+      - key: CORS_ORIGIN
+        value: https://your-project.vercel.app,https://*.vercel.app
