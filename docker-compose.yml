@@ -27,6 +27,8 @@ services:
         condition: service_healthy
     environment:
       NODE_ENV: production
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-}
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@db:5432/taskmanager
       JWT_SECRET: change_me_in_production

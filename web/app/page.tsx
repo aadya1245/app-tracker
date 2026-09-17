@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import { AuthForm } from '@/components/AuthForm';
+import { AgentPanel } from '@/components/AgentPanel';
 import { TaskManager } from '@/components/TaskManager';
 import type { User } from '@/lib/api';
 
 export default function HomePage() {
+  const [backlogVersion, setBacklogVersion] = useState(0);
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
@@ -14,8 +16,8 @@ export default function HomePage() {
   return (
     <main>
       <section className="card">
-        <h1>Task Manager</h1>
-        <small>Production-quality full-stack app using Next.js, Express, PostgreSQL, and JWT auth.</small>
+        <span className="eyebrow">YOUR SOFTWARE WORKSPACE</span><h1>SprintPilot</h1>
+        <p className="muted">Turn the next thing you want to build into a plan you can finish.</p>
       </section>
 
       {!isAuthenticated ? (
@@ -41,7 +43,8 @@ export default function HomePage() {
               </button>
             </div>
           </section>
-          <TaskManager token={token!} />
+          <AgentPanel token={token!} onApproved={() => setBacklogVersion(v => v + 1)} />
+          <TaskManager key={backlogVersion} token={token!} />
         </>
       )}
     </main>

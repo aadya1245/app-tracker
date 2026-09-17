@@ -94,3 +94,27 @@ export function deleteTask(token: string, id: number) {
     token
   });
 }
+
+export interface AgentRun {
+  id: string;
+  goal: string;
+  mode: 'demo' | 'live';
+  status: 'running' | 'pending_review' | 'approved' | 'rejected' | 'failed';
+  proposal: { summary: string; assumptions: string[]; tasks: { title: string; description: string; acceptanceCriteria: string[]; dependsOn: number[]; relatedTaskIds: number[] }[] } | null;
+  trace: { step: number; tool: string; detail: string; durationMs: number }[];
+  evidence: { id: number; title: string; description: string | null; completed: boolean }[];
+  input_tokens: number;
+  output_tokens: number;
+  error: string | null;
+  task_ids: number[];
+  selected_indices: number[];
+  created_at: string;
+}
+export function agentConfig(token: string) { return request<{ liveAvailable: boolean }>('/agent/config', { token }); }
+export function fetchAgentRuns(token: string) { return request<{ data: AgentRun[] }>('/agent/runs', { token }); }
+export function startAgentRun(token: string, body: { goal: string; mode: 'demo' | 'live'; requestId: string }) {
+  return request<AgentRun>('/agent/runs', { token, method: 'POST', body });
+}
+export function decideAgentRun(token: string, id: string, action: 'approve' | 'reject', selectedIndices: number[]) {
+  return request<AgentRun>(`/agent/runs/${id}/decision`, { token, method: 'POST', body: { action, selectedIndices } });
+}

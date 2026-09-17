@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Task Manager',
-  description: 'Production-ready full-stack task manager'
+  title: 'SprintPilot',
+  description: 'AI-assisted implementation planning and task management'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

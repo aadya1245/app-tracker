@@ -105,3 +105,37 @@ li.task {
   border-radius: 10px;
   padding: 0.85rem;
 }
+
+:root { --bg: #f4f5f0; --primary: #215946; --border: #dce3da; --text: #1e3129; --muted: #66756c; }
+body { background: var(--bg); }
+main { max-width: 1080px; padding-top: 3rem; }
+h1 { font-size: clamp(2rem, 6vw, 3.3rem); letter-spacing: -.05em; }
+h2 { letter-spacing: -.035em; }
+p, li { line-height: 1.65; }
+.card { padding: 1.8rem; border-radius: 16px; }
+.eyebrow { display: block; color: var(--primary); font-size: .7rem; font-weight: 700; letter-spacing: .14em; margin-bottom: .75rem; }
+.muted { color: var(--muted); }
+.agent-card { border-top: 4px solid var(--primary); }
+.agent-heading, .agent-controls { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.agent-heading h2, .agent-heading h3 { margin-bottom: 0; }
+.badge { font-size: .75rem; color: #215946; background: #e9f1e7; border-radius: 999px; padding: .5rem .8rem; white-space: nowrap; }
+select { display: block; margin-top: .4rem; font: inherit; border: 1px solid var(--border); padding: .6rem; border-radius: 8px; color: var(--text); background: white; max-width: 100%; }
+button { font-weight: 600; padding: .7rem 1rem; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+button:hover:not(:disabled) { filter: brightness(.94); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 3px solid #81ac60; outline-offset: 3px; }
+textarea { resize: vertical; }
+.plan-result { border-top: 1px solid var(--border); margin-top: 1.5rem; padding-top: 1.5rem; }
+.proposed-tasks { list-style: none; padding: 0; display: grid; gap: 1rem; }
+.proposed-tasks > li { padding: 1.2rem; border: 1px solid var(--border); border-radius: 10px; background: #fcfdfb; }
+.task-choice { display: flex; align-items: baseline; gap: .7rem; cursor: pointer; }
+.task-choice input { width: auto; accent-color: var(--primary); }
+.proposed-tasks p, .proposed-tasks ul { margin: .6rem 0; }
+.evidence { font-size: .85rem; color: var(--primary); }
+summary { cursor: pointer; font-weight: 600; padding: .7rem 0; }
+.trace, .history { margin-top: 1.2rem; font-size: .9rem; }
+.history ul { list-style: none; padding: 0; }
+.history-item { width: 100%; text-align: left; background: #f4f7f1; color: var(--text); margin: .3rem 0; overflow-wrap: anywhere; }
+.history-item small { display: block; font-weight: 400; }
+.error { color: #a52020; }
+@media (max-width: 600px) { main { padding: 1rem .7rem; } .card { padding: 1.1rem; } .agent-controls { align-items: stretch; flex-direction: column; } .agent-heading { align-items: flex-start; } }

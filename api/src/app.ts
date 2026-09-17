@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { authRouter } from './routes/auth.routes.js';
+import { agentRouter } from './routes/agent.routes.js';
 import { taskRouter } from './routes/task.routes.js';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js';
 
@@ -41,6 +42,7 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/tasks', taskRouter);
+app.use('/api/v1/agent', agentRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

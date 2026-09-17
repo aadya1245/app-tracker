@@ -1,6 +1,40 @@
-# Full-Stack Task Manager (Production Quality)
+# SprintPilot
 
-A portfolio-ready full-stack task manager built to demonstrate real-world fundamentals:
+An AI-assisted implementation planner built into a full-stack task manager. Describe a feature, let the agent inspect your backlog, review a plan with acceptance criteria and dependencies, then approve selected tasks.
+
+**Status:** working demo workflow and configurable live Anthropic adapter. Demo is a deterministic template; live inference needs your own API key and model ID. No live model quality results are claimed.
+
+- [Research and project decision](docs/PROJECT_DECISION.md)
+- [Architecture, limits, and tradeoffs](docs/ARCHITECTURE.md)
+
+## Try SprintPilot
+
+1. Run `npm ci` and `docker compose up -d db`.
+2. Copy `api/.env.example` to `api/.env`; start `npm run dev:api`.
+3. In another terminal, start `npm run dev:web` and open `http://localhost:3000`.
+4. Register, enter a feature request, and choose **Demo template**.
+5. Create a plan, inspect assumptions and activity, and approve the selected tasks.
+6. Find the tasks in your backlog and reopen the saved plan in Recent plans.
+
+For live AI, set `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` to a model available in your Anthropic account, then restart the API and reload the page. The server sends the goal and retrieved backlog to that provider. Keys are never entered in the browser.
+
+## Agent API
+
+All routes below require the existing bearer token.
+
+| Method | Route | Purpose |
+| --- | --- | --- |
+| GET | `/api/v1/agent/config` | Check live-provider availability |
+| POST | `/api/v1/agent/runs` | `{goal, mode: "demo" or "live", requestId: UUID}` |
+| GET | `/api/v1/agent/runs` | Most recent 20 owned runs |
+| GET | `/api/v1/agent/runs/:id` | Owned run, evidence, proposal, and activity |
+| POST | `/api/v1/agent/runs/:id/decision` | `{action: "approve" or "reject", selectedIndices: [0,1,2]}` |
+
+Run-creation retries must reuse the same UUID and input. Repeated identical approvals reuse the created tasks. Review prerequisites before selecting a subset. The API initializes the additive `agent_runs` schema on startup, including for existing databases.
+
+## Existing task-manager foundation
+
+The application retains its existing foundation:
 - Next.js (TypeScript) frontend
 - Node.js + Express (TypeScript) backend
 - PostgreSQL database
@@ -8,7 +42,7 @@ A portfolio-ready full-stack task manager built to demonstrate real-world fundam
 - Input validation, pagination, Docker, and deployment-ready setup
 
 ## Tech Stack
-- Frontend: Next.js 14 + TypeScript
+- Frontend: Next.js 14.2.35 + TypeScript
 - Backend: Express + TypeScript
 - Database: PostgreSQL (`pg`)
 - Auth: JWT + bcrypt password hashing
@@ -134,7 +168,7 @@ Services:
    - Create service from `render.yaml` (backend only).
    - Set `DATABASE_URL` to Neon connection string.
    - Set `JWT_SECRET` to a strong value.
-   - Keep `CORS_ORIGIN` as `https://your-project.vercel.app,https://*.vercel.app` (replace your-project).
+   - Keep `CORS_ORIGIN` as `https://your-project.vercel.app` (replace your-project).
 4. Vercel:
    - Import this repo with Root Directory `web`.
    - Set `NEXT_PUBLIC_API_URL=https://<your-render-service>.onrender.com/api/v1`.
@@ -158,7 +192,9 @@ Services:
 
 ## Testing
 
-### API integration tests (Vitest + Supertest)
+### API and agent tests (Vitest, Supertest, PGlite)
+
+The agent integration suite uses real PostgreSQL compiled to WASM in memory. It tests SQL persistence, isolation, replay, limits, and rollback without Docker. Provider HTTP is mocked; live model quality is not measured.
 ```bash
 npm run test:api
 ```
@@ -168,7 +204,7 @@ npm run test:api
 ```bash
 npx playwright install
 ```
-2. Start web app (and API if your test scenario needs backend):
+2. The Playwright config starts the web app automatically. To run manually:
 ```bash
 npm run dev:web
 ```

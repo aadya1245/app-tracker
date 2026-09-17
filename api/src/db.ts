@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { env } from './config/env.js';
+import { agentSchemaSql } from './agent/db-schema.js';
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL
@@ -39,4 +40,5 @@ export async function verifyDatabaseConnection(): Promise<void> {
 
 export async function initializeSchema(): Promise<void> {
   await pool.query(schemaSql);
+  await pool.query(agentSchemaSql);
 }
