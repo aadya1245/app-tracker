@@ -6,6 +6,7 @@ An AI-assisted implementation planner built into a full-stack task manager. Desc
 
 - [Research and project decision](docs/PROJECT_DECISION.md)
 - [Architecture, limits, and tradeoffs](docs/ARCHITECTURE.md)
+- [Five-minute demo and engineering walkthrough](docs/DEMO.md)
 
 ## Try SprintPilot
 
@@ -30,7 +31,7 @@ All routes below require the existing bearer token.
 | GET | `/api/v1/agent/runs/:id` | Owned run, evidence, proposal, and activity |
 | POST | `/api/v1/agent/runs/:id/decision` | `{action: "approve" or "reject", selectedIndices: [0,1,2]}` |
 
-Run-creation retries must reuse the same UUID and input. Repeated identical approvals reuse the created tasks. Review prerequisites before selecting a subset. The API initializes the additive `agent_runs` schema on startup, including for existing databases.
+Run-creation retries must reuse the same UUID and input. Repeated identical approvals reuse the created tasks. Review prerequisites before selecting a subset. Approval returns HTTP 409 if the related backlog evidence changed or was deleted; create a fresh plan to review the new state. The API initializes the additive `agent_runs` schema on startup, including for existing databases.
 
 ## Existing task-manager foundation
 
