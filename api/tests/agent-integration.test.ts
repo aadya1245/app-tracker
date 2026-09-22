@@ -14,7 +14,7 @@ vi.mock('../src/db.js', () => {
 import { app } from '../src/app.js';
 import { signToken } from '../src/utils/jwt.js';
 import { agentSchemaSql } from '../src/agent/db-schema.js';
-import { decideRun, getRun, reserveRun } from '../src/agent/store.js';
+import { decideRun, finishRun, getRun, reserveRun } from '../src/agent/store.js';
 
 const token = signToken({ userId: 1, email: 'one@example.com' });
 const otherToken = signToken({ userId: 2, email: 'two@example.com' });
@@ -32,6 +32,52 @@ beforeEach(async () => { await state.db.exec('DELETE FROM agent_runs; DELETE FRO
 afterAll(async () => { await state.db.close(); });
 
 describe('agent API and PostgreSQL persistence (PGlite)', () => {
+  async function evidencedPlan() {
+    const inserted = await state.db.query<{ id: number }>("INSERT INTO tasks (user_id, title, description) VALUES (1, 'Search index', 'Existing search implementation') RETURNING id");
+    const id = inserted.rows[0].id;
+    const { run } = await reserveRun(1, payload().goal, 'demo', randomUUID());
+    await finishRun(1, run.id, {
+      proposal: { summary: 'Extend search', assumptions: [], tasks: [
+        { title: 'Add search pagination', description: 'Extend existing index', acceptanceCriteria: ['Page two contains distinct results'], dependsOn: [], relatedTaskIds: [id] },
+        { title: 'Document onboarding', description: 'Independent documentation', acceptanceCriteria: ['Setup commands are documented'], dependsOn: [], relatedTaskIds: [] }
+      ] }, trace: [], inputTokens: 0, outputTokens: 0
+    }, [{ id, title: 'Search index', description: 'Existing search implementation', completed: false }]);
+    return { runId: run.id, taskId: id };
+  }
+  it.each(['title', 'description', 'completed', 'deleted'])('blocks approval when referenced evidence is %s', async field => {
+    const { runId, taskId } = await evidencedPlan();
+    const mutations: Record<string, string> = {
+      title: "UPDATE tasks SET title = 'Different work' WHERE id = $1",
+      description: "UPDATE tasks SET description = 'Changed scope' WHERE id = $1",
+      completed: 'UPDATE tasks SET completed = TRUE WHERE id = $1',
+      deleted: 'DELETE FROM tasks WHERE id = $1'
+    };
+    await state.db.query(mutations[field], [taskId]);
+    const response = await request(app).post(`/api/v1/agent/runs/${runId}/decision`)
+      .set('Authorization', authorization).send({ action: 'approve', selectedIndices: [0, 1] });
+    expect(response.status).toBe(409);
+    expect((await getRun(1, runId)).status).toBe('pending_review');
+    expect((await state.db.query("SELECT * FROM tasks WHERE title IN ('Add search pagination', 'Document onboarding')")).rows).toHaveLength(0);
+  });
+  it('approves unchanged evidence and keeps retries idempotent after later edits', async () => {
+    const { runId, taskId } = await evidencedPlan();
+    const approved = await decideRun(1, runId, 'approve', [0]);
+    await state.db.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    expect((await decideRun(1, runId, 'approve', [0])).task_ids).toEqual(approved.task_ids);
+  });
+  it('allows an independent subset or rejection after evidence changes', async () => {
+    const first = await evidencedPlan();
+    await state.db.query('DELETE FROM tasks WHERE id = $1', [first.taskId]);
+    expect((await decideRun(1, first.runId, 'approve', [1])).task_ids).toHaveLength(1);
+    const second = await evidencedPlan();
+    await state.db.query('DELETE FROM tasks WHERE id = $1', [second.taskId]);
+    expect((await decideRun(1, second.runId, 'reject', [])).status).toBe('rejected');
+  });
+  it('does not accept evidence belonging to another account', async () => {
+    const { runId, taskId } = await evidencedPlan();
+    await state.db.query('UPDATE tasks SET user_id = 2 WHERE id = $1', [taskId]);
+    await expect(decideRun(1, runId, 'approve', [0])).rejects.toMatchObject({ statusCode: 409 });
+  });
   it('requires authentication and validates payloads', async () => {
     expect((await request(app).post('/api/v1/agent/runs').send(payload())).status).toBe(401);
     expect((await create({ ...payload(), goal: 'short' })).status).toBe(400);

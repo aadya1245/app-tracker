@@ -82,6 +82,20 @@ export async function decideRun(userId: number, id: string, action: 'approve' | 
       const tasks = run.proposal.tasks;
       if (!indices.length || indices.some(i => i < 0 || i >= tasks.length)) throw new ApiError(400, 'Select valid proposed tasks');
       if (indices.some(i => tasks[i].dependsOn.some(dep => !indices.includes(dep)))) throw new ApiError(400, 'Also select prerequisite tasks, or start a revised plan');
+      // Recheck only evidence used by selected tasks. Lock those rows through commit
+      // so a concurrent edit/delete cannot invalidate this check before task creation.
+      const relatedIds = [...new Set(indices.flatMap(i => tasks[i].relatedTaskIds))].sort((a, b) => a - b);
+      if (relatedIds.length) {
+        const current = await client.query<BacklogTask>(`SELECT id, title, LEFT(description, 600) AS description, completed
+          FROM tasks WHERE user_id = $1 AND id = ANY($2::int[]) ORDER BY id FOR SHARE`, [userId, relatedIds]);
+        const snapshot = new Map(run.evidence.map(task => [task.id, task]));
+        const fresh = new Map(current.rows.map(task => [task.id, task]));
+        const changed = relatedIds.some(id => {
+          const before = snapshot.get(id), now = fresh.get(id);
+          return !before || !now || before.title !== now.title || before.description !== now.description || before.completed !== now.completed;
+        });
+        if (changed) throw new ApiError(409, 'Related backlog tasks changed or were deleted. Create a fresh plan before approving.');
+      }
       const createdIds = new Map<number, number>();
       for (const i of indices) {
         const task = tasks[i];
