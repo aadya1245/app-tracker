@@ -2,6 +2,7 @@ services:
   - type: web
     name: task-manager-api
     runtime: docker
+    plan: free
     rootDir: api
     envVars:
       - key: NODE_ENV
